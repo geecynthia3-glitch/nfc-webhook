@@ -15,18 +15,39 @@ app.get("/", (req, res) => {
   res.status(200).send("NFC Webhook Server is Running ✅");
 });
 
-function handleNfc(req, res) {
+async function handleNfc(req, res) {
   const providedKey = req.query.key;
 
-if (process.env.WEBHOOK_SECRET && providedKey !== process.env.WEBHOOK_SECRET) {
-  console.log("Unauthorized: bad or missing key query param");
-  return res.status(401).json({ error: "Unauthorized" });
-}
+  if (process.env.WEBHOOK_SECRET && providedKey !== process.env.WEBHOOK_SECRET) {
+    console.log("Unauthorized: bad or missing key");
+    return res.status(401).json({ error: "Unauthorized" });
+  }
 
   console.log("Headers:", req.headers);
   console.log("Body:", req.body);
 
-  return res.status(200).json({ ok: true, received: req.body });
+  try {
+    const response = await axios.post(
+      `https://api.clickup.com/api/v2/list/${process.env.CLICKUP_LIST_ID}/task`,
+      {
+        name: "Guest Check-In",
+        description: `NFC tap received:\n\n${JSON.stringify(req.body, null, 2)}`
+      },
+      {
+        headers: {
+          Authorization: process.env.CLICKUP_API_TOKEN,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    console.log("ClickUp task created:", response.data.id);
+    return res.status(200).json({ success: true, clickupTaskId: response.data.id });
+
+  } catch (err) {
+    console.error("ClickUp error:", err.response?.data || err.message);
+    return res.status(500).json({ error: "ClickUp task failed" });
+  }
 }
 
 // Accept BOTH routes so your NFC Tools URL doesn't have to be perfect
