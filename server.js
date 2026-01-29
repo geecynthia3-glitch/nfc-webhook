@@ -16,14 +16,12 @@ app.get("/", (req, res) => {
 });
 
 function handleNfc(req, res) {
-  const secret = req.headers["x-webhook-secret"];
+  const providedKey = req.query.key;
 
-  // If you set WEBHOOK_SECRET in Render, we enforce it.
-  // If you didn't set it yet, we allow requests to help you test quickly.
-  if (process.env.WEBHOOK_SECRET && secret !== process.env.WEBHOOK_SECRET) {
-    console.log("Unauthorized: bad or missing x-webhook-secret");
-    return res.status(401).json({ error: "Unauthorized" });
-  }
+if (process.env.WEBHOOK_SECRET && providedKey !== process.env.WEBHOOK_SECRET) {
+  console.log("Unauthorized: bad or missing key query param");
+  return res.status(401).json({ error: "Unauthorized" });
+}
 
   console.log("Headers:", req.headers);
   console.log("Body:", req.body);
