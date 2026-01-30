@@ -26,7 +26,7 @@ async function handleNfc(req, res) {
 
   console.log("Headers:", req.headers);
   console.log("Body:", req.body);
-
+console.log("CLICKUP_API_TOKEN length:", process.env.CLICKUP_API_TOKEN?.length);
   try {
     const response = await axios.post(
       `https://api.clickup.com/api/v2/list/${process.env.CLICKUP_LIST_ID}/task`,
