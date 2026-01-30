@@ -36,7 +36,7 @@ async function handleNfc(req, res) {
       },
       {
         headers: {
-          Authorization: process.env.CLICKUP_API_TOKEN,
+          Authorization: `Bearer ${process.env.CLICKUP_API_TOKEN}`,
           "Content-Type": "application/json"
         }
       }
