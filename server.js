@@ -33,6 +33,31 @@ app.get("/health/clickup", async (req, res) => {
   }
 });
 
+async function getClickUpTask(taskId) {
+  const r = await axios.get(`https://api.clickup.com/api/v2/task/${taskId}`, {
+    headers: { Authorization: process.env.CLICKUP_API_TOKEN }
+  });
+  return r.data;
+}
+
+async function setClickUpField(taskId, fieldId, value) {
+  return axios.post(
+    `https://api.clickup.com/api/v2/task/${taskId}/field/${fieldId}`,
+    { value },
+    {
+      headers: {
+        Authorization: process.env.CLICKUP_API_TOKEN,
+        "Content-Type": "application/json"
+      }
+    }
+  );
+}
+
+function getCustomFieldValue(task, fieldId) {
+  const f = (task.custom_fields || []).find(x => x.id === fieldId);
+  return f?.value ?? null;
+}
+
 async function handleNfc(req, res) {
   const providedKey = req.query.key;
 
@@ -40,6 +65,51 @@ async function handleNfc(req, res) {
     console.log("Unauthorized: bad or missing key");
     return res.status(401).json({ error: "Unauthorized" });
   }
+
+  console.log("Query:", req.query);
+
+  try {
+    const masterTaskId = process.env.CLICKUP_EVENT_TASK_ID;
+    const tapFieldId = process.env.CLICKUP_TAP_COUNT_FIELD_ID;
+    const statusFieldId = process.env.CLICKUP_STATUS_FIELD_ID;
+
+    if (!masterTaskId || !tapFieldId || !statusFieldId) {
+      return res.status(500).json({
+        error: "Missing env vars",
+        missing: {
+          CLICKUP_EVENT_TASK_ID: !masterTaskId,
+          CLICKUP_TAP_COUNT_FIELD_ID: !tapFieldId,
+          CLICKUP_STATUS_FIELD_ID: !statusFieldId
+        }
+      });
+    }
+
+    // 1) Read master task
+    const task = await getClickUpTask(masterTaskId);
+
+    // 2) Increment Tap Count
+    const current = Number(getCustomFieldValue(task, tapFieldId) || 0);
+    const nextCount = current + 1;
+
+    // 3) Write Tap Count + Status
+    await setClickUpField(masterTaskId, tapFieldId, nextCount);
+    await setClickUpField(masterTaskId, statusFieldId, "Tapped");
+
+    console.log("Updated master task:", masterTaskId, "tapCount:", nextCount);
+
+    return res.status(200).json({
+      success: true,
+      updatedTaskId: masterTaskId,
+      tapCount: nextCount,
+      status: "Tapped"
+    });
+
+  } catch (err) {
+    console.error("ClickUp update error:", err.response?.data || err.message);
+    return res.status(500).json({ error: "ClickUp update failed", detail: err.response?.data || err.message });
+  }
+}
+
 
   console.log("Headers:", req.headers);
   console.log("Query:", req.query);
