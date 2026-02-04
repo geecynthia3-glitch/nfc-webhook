@@ -71,6 +71,32 @@ app.post("/nfc-webhook", handleNfc);
 app.get("/nfc", handleNfc);
 app.get("/nfc-webhook", handleNfc);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;   
+// --- ClickUp helper routes (temporary for setup) ---
+
+app.get("/clickup/fields", async (req, res) => {
+  try {
+    const r = await axios.get(
+      `https://api.clickup.com/api/v2/list/${process.env.CLICKUP_LIST_ID}/field`,
+      { headers: { Authorization: process.env.CLICKUP_API_TOKEN } }
+    );
+    res.json(r.data);
+  } catch (e) {
+    res.status(500).json({ error: e.response?.data || e.message });
+  }
+});
+
+app.get("/clickup/task/:taskId", async (req, res) => {
+  try {
+    const r = await axios.get(
+      `https://api.clickup.com/api/v2/task/${req.params.taskId}`,
+      { headers: { Authorization: process.env.CLICKUP_API_TOKEN } }
+    );
+    res.json({ ok: true, id: r.data.id, name: r.data.name, custom_fields: r.data.custom_fields });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.response?.data || e.message });
+  }
+});
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
