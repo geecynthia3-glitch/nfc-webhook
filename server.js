@@ -5,6 +5,8 @@ const axios = require("axios");
 console.log("CLICKUP_API_TOKEN exists?", !!process.env.CLICKUP_API_TOKEN);
 console.log("CLICKUP_LIST_ID exists?", !!process.env.CLICKUP_LIST_ID);
 console.log("WEBHOOK_SECRET exists?", !!process.env.WEBHOOK_SECRET);
+console.log("CLICKUP_API_TOKEN length:", process.env.CLICKUP_API_TOKEN?.length);
+
 
 const app = express();
 app.use(express.json());
