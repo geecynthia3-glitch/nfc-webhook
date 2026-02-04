@@ -108,37 +108,12 @@ async function handleNfc(req, res) {
     console.error("ClickUp update error:", err.response?.data || err.message);
     return res.status(500).json({ error: "ClickUp update failed", detail: err.response?.data || err.message });
   }
-}
 
 
   console.log("Headers:", req.headers);
   console.log("Query:", req.query);
   console.log("Body:", req.body);
-  console.log("CLICKUP_API_TOKEN length:", process.env.CLICKUP_API_TOKEN?.length);
-
-  try {
-    const response = await axios.post(
-      `https://api.clickup.com/api/v2/list/${process.env.CLICKUP_LIST_ID}/task`,
-      {
-        name: "Guest Check-In",
-        description:
-          `NFC tap received:\n\nQuery:\n${JSON.stringify(req.query, null, 2)}\n\nBody:\n${JSON.stringify(req.body, null, 2)}`
-      },
-      {
-        headers: {
-          Authorization: process.env.CLICKUP_API_TOKEN,
-          "Content-Type": "application/json"
-        }
-      }
-    );
-
-    console.log("ClickUp task created:", response.data.id);
-    return res.status(200).json({ success: true, clickupTaskId: response.data.id });
-  } catch (err) {
-    console.error("ClickUp error:", err.response?.data || err.message);
-    return res.status(500).json({ error: "ClickUp task failed", detail: err.response?.data || err.message });
-  }
-}
+  
 
 app.post("/nfc", handleNfc);
 app.post("/nfc-webhook", handleNfc);
