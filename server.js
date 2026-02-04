@@ -33,6 +33,17 @@ app.get("/health/clickup", async (req, res) => {
   }
 });
 
+app.get("/health/env", (req, res) => {
+  res.json({
+    ok: true,
+    has: {
+      CLICKUP_EVENT_TASK_ID: !!process.env.CLICKUP_EVENT_TASK_ID,
+      CLICKUP_TAP_COUNT_FIELD_ID: !!process.env.CLICKUP_TAP_COUNT_FIELD_ID,
+      CLICKUP_STATUS_FIELD_ID: !!process.env.CLICKUP_STATUS_FIELD_ID
+    }
+  });
+});
+
 async function getClickUpTask(taskId) {
   const r = await axios.get(`https://api.clickup.com/api/v2/task/${taskId}`, {
     headers: { Authorization: process.env.CLICKUP_API_TOKEN }
