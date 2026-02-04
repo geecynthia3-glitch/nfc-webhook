@@ -108,11 +108,7 @@ async function handleNfc(req, res) {
     console.error("ClickUp update error:", err.response?.data || err.message);
     return res.status(500).json({ error: "ClickUp update failed", detail: err.response?.data || err.message });
   }
-
-
-  console.log("Headers:", req.headers);
-  console.log("Query:", req.query);
-  console.log("Body:", req.body);
+}
   
 
 app.post("/nfc", handleNfc);
