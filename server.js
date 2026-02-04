@@ -36,9 +36,10 @@ console.log("CLICKUP_API_TOKEN length:", process.env.CLICKUP_API_TOKEN?.length);
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.CLICKUP_API_TOKEN}`,
-          "Content-Type": "application/json"
-        }
+  Authorization: process.env.CLICKUP_API_TOKEN,
+  "Content-Type": "application/json"
+}
+
       }
     );
 
