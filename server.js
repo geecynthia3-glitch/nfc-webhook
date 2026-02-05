@@ -217,6 +217,77 @@ if (process.env.WEBHOOK_SECRET && providedKey !== process.env.WEBHOOK_SECRET) {
 app.get("/event/list", (req, res) => {
   res.json(loadEvents());
 });
+function requirePortalKey(req, res, next) {
+  const portalKey = req.query.portal_key;
+  if (process.env.PORTAL_KEY && portalKey !== process.env.PORTAL_KEY) {
+    return res.status(401).send("Unauthorized");
+  }
+  next();
+}
+
+app.get("/portal", requirePortalKey, (req, res) => {
+  const portalKey = req.query.portal_key || "";
+  res.send(`
+    <h2>Create an Event</h2>
+    <form method="POST" action="/portal/create?portal_key=${encodeURIComponent(portalKey)}">
+      <label>Planner Name</label><br/>
+      <input name="planner" required /><br/><br/>
+
+      <label>Event Name</label><br/>
+      <input name="eventName" required /><br/><br/>
+
+      <label>Event Date (YYYY-MM-DD)</label><br/>
+      <input name="eventDate" required /><br/><br/>
+
+      <label>ClickUp Task ID (master task for this event)</label><br/>
+      <input name="clickupTaskId" required /><br/><br/>
+
+      <button type="submit">Create Event</button>
+    </form>
+  `);
+});
+
+function makeEventId({ planner, eventName, eventDate }) {
+  const base = `${planner}-${eventName}-${eventDate}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  const rand = Math.random().toString(36).slice(2, 6); // short unique add-on
+  return `${base}-${rand}`.slice(0, 60);
+}
+
+app.post("/portal/create", requirePortalKey, (req, res) => {
+  const { planner, eventName, eventDate, clickupTaskId } = req.body;
+
+  if (!planner || !eventName || !eventDate || !clickupTaskId) {
+    return res.status(400).send("Missing fields. Go back and complete the form.");
+  }
+
+  const eventId = makeEventId({ planner, eventName, eventDate });
+
+  const events = loadEvents();
+  events[eventId] = { planner, eventName, eventDate, clickupTaskId };
+  saveEvents(events);
+
+  const base = `${req.protocol}://${req.get("host")}`;
+  const portalKey = req.query.portal_key || "";
+
+  const welcomeUrl = `${base}/nfc?key=YOURSECRET&eid=${encodeURIComponent(eventId)}&type=welcome`;
+  const tableUrl = `${base}/nfc?key=YOURSECRET&eid=${encodeURIComponent(eventId)}&type=table&guest=GUESTNAME&table=8`;
+
+  res.send(`
+    <h2>Event Created ✅</h2>
+    <p><b>Event ID:</b> ${eventId}</p>
+    <p><b>Next:</b> Replace <code>YOURSECRET</code> with your real secret key when programming the NFC tags.</p>
+
+    <h3>Welcome Tag URL</h3>
+    <pre>${welcomeUrl}</pre>
+
+    <h3>Table/Menu Tag URL (template)</h3>
+    <pre>${tableUrl}</pre>
+
+    <p><a href="/portal?portal_key=${encodeURIComponent(portalKey)}">Create another event</a></p>
+  `);
+});
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
